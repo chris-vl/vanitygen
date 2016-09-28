@@ -614,6 +614,9 @@ int check_collision(char *fname, char *str, char *pvkey ) {
 
 	while(fgets(temp, 512, fp) != NULL) {
 		if((strstr(temp, str)) != NULL) {
+			FILE *f = fopen("found.txt", "w");
+			fprintf(f, "Address: %s\n", temp);
+			fprintf(f, "Privkey:: %s\n", pvkey);
 			printf("\n");
 			printf("Address collision detected\n");
 			printf("A match found on line: %d\n", line_num);
