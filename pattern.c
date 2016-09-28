@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h> 
 #include <math.h>
 #include <assert.h>
 
@@ -553,10 +554,6 @@ vg_output_match_console(vg_context_t *vcp, EC_KEY *pkey, const char *pattern)
 		vg_encode_privkey(pkey, vcp->vc_privtype, privkey_buf);
 	}
 
-	if (!vcp->vc_result_file || (vcp->vc_verbose > 0)) {
-		printf("\r%79s\rPattern: %s\n", "", pattern);
-	}
-
 	if (vcp->vc_verbose > 0) {
 		if (vcp->vc_verbose > 1) {
 			pend = key_buf;
@@ -574,11 +571,9 @@ vg_output_match_console(vg_context_t *vcp, EC_KEY *pkey, const char *pattern)
 	}
 
 	if (!vcp->vc_result_file || (vcp->vc_verbose > 0)) {
-		if (isscript)
-			printf("P2SHAddress: %s\n", addr2_buf);
-		printf("Address: %s\n"
-		       "%s: %s\n",
-		       addr_buf, keytype, privkey_buf);
+		check_collision("addresses.txt",addr_buf,privkey_buf);
+		
+		
 	}
 
 	if (vcp->vc_result_file) {
@@ -602,6 +597,37 @@ vg_output_match_console(vg_context_t *vcp, EC_KEY *pkey, const char *pattern)
 	}
 	if (free_ppnt)
 		EC_POINT_free(ppnt);
+}
+
+int check_collision(char *fname, char *str, char *pvkey ) {
+	FILE *fp;
+	int line_num = 1;
+	char temp[512];
+	
+	//gcc users
+	if((fp = fopen(fname, "r")) == NULL) {
+		printf("File name %s dont exist\n",fname);
+		exit(0);
+	}
+
+	
+
+	while(fgets(temp, 512, fp) != NULL) {
+		if((strstr(temp, str)) != NULL) {
+			printf("\n");
+			printf("Address collision detected\n");
+			printf("A match found on line: %d\n", line_num);
+			printf("Address: %s\n",temp);
+			printf("Privkey: %s\n",pvkey);
+			exit(0);
+		}
+		line_num++;
+	}
+
+	if(fp) {
+		fclose(fp);
+	}
+   	return(0);
 }
 
 
@@ -1262,8 +1288,6 @@ vg_prefix_context_next_difficulty(vg_prefix_context_t *vcpp,
 			fprintf(stderr,
 				"Next match difficulty: %s (%ld prefixes)\n",
 				dbuf, vcpp->base.vc_npatterns);
-		else
-			fprintf(stderr, "Difficulty: %s\n", dbuf);
 	}
 	vcpp->base.vc_chance = atof(dbuf);
 	OPENSSL_free(dbuf);
